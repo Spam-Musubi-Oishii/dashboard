@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Student Picker</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Class Selection Dropdown -->
+        <div class="row mb-4">
+            <div class="col-md-4 mt-2">
+                <select class="form-select" id="classSelect">
+                    <option value="">Select Class</option>
+                    <option value="new">+ Add New Class</option>
+                </select>
+            </div>
+            <div class="col-md-4 mt-2">
+                <div class="card">
+                    <div class="card-body p-2">
+                        <div class="d-flex align-items-center">
+                            <strong class="me-2">Today's Selections:</strong>
+                            <span id="todaySelectionsCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mt-2">
+                <div class="card">
+                    <div class="card-body p-2">
+                        <button id="addClassPoint" class="btn btn-outline-success btn-sm w-100" style="display: none;">
+                            Add Class Point
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="m-5" id="progressTracker">
+            <!-- Progress wizard will be inserted here -->
+        </div>
+
+        <div id="content-container">
+
+        <!-- New Class Modal -->
+        <div class="modal fade" id="newClassModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Class</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Class Name</label>
+                            <input type="text" class="form-control" id="newClassName">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Student Names (one per line)</label>
+                            <textarea class="form-control" id="studentNames" rows="5"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="file-drop-zone" id="fileDropZone">
+                                Drop CSV file here or click to upload
+                                <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="saveClass">Save Class</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Tabs -->
+        <ul class="nav nav-tabs" id="mainTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#picker">Student Picker</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#teamPicker">Team Picker</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#leaderboard">Leaderboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#milestones">Milestones</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#stats">Stats</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#students">Students</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#teams">Teams</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#classes">Classes</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="settings-tab" data-bs-toggle="tab" href="#settings" role="tab">Settings</a>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Student Picker Tab -->
+            <div class="tab-pane fade show active" id="picker">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="text-center mt-4"></div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button id="selectButton" class="btn btn-primary">Select Student</button>
+                            </div>                        
+                        </div>
+                        <div class="student-selector shadow-sm mt-3" id="studentSelector">
+                            <!-- Student items will be added here dynamically -->
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Picker Tab -->
+            <div class="tab-pane fade" id="teamPicker">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="text-center mt-4"></div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button id="selectTeamButton" class="btn btn-primary">Select Team</button>
+                            </div>                        
+                        </div>
+                        <div class="team-selector shadow-sm mt-3" id="teamSelector">
+                            <!-- Team items will be added here dynamically -->
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Tab (previously Assigned Teams) -->
+            <div class="tab-pane fade" id="teams">
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <!-- Team Set Selection Card -->
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">View Saved Team Sets</h5>
+                            </div>
+                            <div class="card-body">
+                                <select id="savedTeamSetsSelect" class="form-select">
+                                    <option value="">Load Saved Team Set</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        
+
+                        <!-- Team Creation Card -->
+                        <div class="card shadow-sm border-0 mt-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Create a Team Set</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="teamSetName" class="form-label">Name</label>
+                                        <input type="text" id="teamSetName" class="form-control" placeholder="Team Set Name (e.g., Investigation Teams)">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="numTeams" class="form-label">Number of Teams</label>
+                                        <input type="number" id="numTeams" class="form-control" value="4" min="2">
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="d-flex gap-2">
+                                            <button id="generateTeams" class="btn btn-secondary">Generate Teams</button>
+                                            <button id="confirmTeams" class="btn btn-primary">Save Teams</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Teams Display Section -->
+                <div id="teamsList" class="mt-4"></div>
+                
+            </div>
+
+            <!-- Leaderboard Tab -->
+            <div class="tab-pane fade" id="leaderboard">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Times Selected</th>
+                            <th>Last Selected</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody"></tbody>
+                </table>
+            </div>
+
+            <!-- Milestones Tab -->
+            <div class="tab-pane fade" id="milestones">
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Class Milestones</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-3">
+                                        <input type="number" id="milestonePoints" class="form-control" placeholder="Points required" min="1">
+                                    </div>
+                                    <div class="col-md-7">
+                                        <input type="text" id="milestoneDescription" class="form-control" placeholder="Milestone description">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button id="addMilestoneBtn" class="btn btn-primary w-100">Add Milestone</button>
+                                    </div>
+                                </div>
+                                <div id="milestonesList">
+                                    <!-- Milestones will be displayed here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Tab -->
+            <div class="tab-pane fade" id="stats">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Selection Statistics</h5>
+                                <div id="statsContent"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Tab -->
+            <div class="tab-pane fade" id="students">
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Student Management</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Student</th>
+                                                <th>Times Picked</th>
+                                                <th>Points</th>
+                                                <th>Last Picked</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="studentsTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              </div>
+
+            <!-- Classes Tab -->
+            <div class="tab-pane fade" id="classes">
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Class Management</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="classesList"></div>
+                                <div class="border-top mt-4 pt-4">
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClassModal">
+                                        Add New Class
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-pane fade" id="settings" role="tabpanel">
+                <div class="container mt-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card shadow-sm border-0 mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Animation Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="fireworksEnabled" class="form-check-label">
+                                            <input type="checkbox" class="form-check-input" id="fireworksEnabled">
+                                            Enable Fireworks
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card shadow-sm border-0 mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Display Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-check-label">
+                                            <input type="checkbox" class="form-check-input" id="showTeamsTab">
+                                            Show Teams
+                                        </label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-check-label">
+                                            <input type="checkbox" class="form-check-input" id="showLeaderboardTab">
+                                            Show Leaderboard
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="showMilestonesTab">
+                                        <label class="form-check-label" for="showMilestonesTab">Show Milestones</label>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="showStatsTab">
+                                        <label class="form-check-label" for="showStatsTab">Show Stats</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Data Management</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <button class="btn btn-primary" id="exportData">Export All Data</button>
+                                    </div>
+                                    <div class="mb-3">
+                                        <button class="btn btn-secondary" id="importData">Import Data</button>
+                                        <input type="file" id="importFile" accept=".json" style="display: none;">
+                                    </div>
+                                    <div class="mb-3">
+                                        <button class="btn btn-danger" id="resetData">Reset All Data</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div class="toast" id="pointsToast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-body" id="pointsToastBody"></div>
+        </div>
+    </div>
+
+    <!-- Milestone Celebration Modal -->
+    <div class="modal fade" id="milestoneCelebrationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">🎉 Milestone Reached! 🎉</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <h4 id="milestoneMessage"></h4>
+                    <div id="nextMilestoneInfo" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

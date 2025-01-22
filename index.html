@@ -206,6 +206,142 @@
                 </table>
             </div>
 
+<!-- Stats Tab -->
+<div class="tab-pane fade" id="stats">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Selection Statistics</h5>
+                    <div id="statsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Students Tab -->
+<div class="tab-pane fade" id="students">
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Student Management</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Times Picked</th>
+                                    <th>Points</th>
+                                    <th>Last Picked</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+
+<!-- Classes Tab -->
+<div class="tab-pane fade" id="classes">
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Class Management</h5>
+                </div>
+                <div class="card-body">
+                    <div id="classesList"></div>
+                    <div class="border-top mt-4 pt-4">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClassModal">
+                            Add New Class
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Tab -->
+<div class="tab-pane fade" id="settings" role="tabpanel">
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Animation Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="fireworksEnabled" class="form-check-label">
+                                <input type="checkbox" class="form-check-input" id="fireworksEnabled">
+                                Enable Fireworks
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Display Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-check-label">
+                                <input type="checkbox" class="form-check-input" id="showTeamsTab">
+                                Show Teams
+                            </label>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-check-label">
+                                <input type="checkbox" class="form-check-input" id="showLeaderboardTab">
+                                Show Leaderboard
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="showMilestonesTab">
+                            <label class="form-check-label" for="showMilestonesTab">Show Milestones</label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="showStatsTab">
+                            <label class="form-check-label" for="showStatsTab">Show Stats</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header">
+                        <h5 class="mb-0">Data Management</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <button class="btn btn-primary" id="exportData">Export All Data</button>
+                        </div>
+                        <div class="mb-3">
+                            <button class="btn btn-secondary" id="importData">Import Data</button>
+                            <input type="file" id="importFile" accept=".json" style="display: none;">
+                        </div>
+                        <div class="mb-3">
+                            <button class="btn btn-danger" id="resetData">Reset All Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
             <!-- Milestones Tab -->
             <div class="tab-pane fade" id="milestones">
                 <div class="row mt-4">
@@ -216,17 +352,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="row g-3 mb-4">
-                                    <div class="col-md-3">
-                                        <input type="number" id="milestonePoints" class="form-control" placeholder="Points required" min="1">
-                                    </div>
-                                    <div class="col-md-7">
-                                        <input type="text" id="milestoneDescription" class="form-control" placeholder="Milestone description">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <button id="addMilestoneBtn" class="btn btn-primary w-100">Add Milestone</button>
-                                    </div>
-                                </div>
-                                <div id="milestonesList">
+                                <div id="milestonesContent">
                                     <!-- Milestones will be displayed here -->
                                 </div>
                             </div>
@@ -235,141 +361,7 @@
                 </div>
             </div>
 
-            <!-- Stats Tab -->
-            <div class="tab-pane fade" id="stats">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Selection Statistics</h5>
-                                <div id="statsContent"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Students Tab -->
-            <div class="tab-pane fade" id="students">
-                <div class="row mt-4">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">Student Management</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Student</th>
-                                                <th>Times Picked</th>
-                                                <th>Points</th>
-                                                <th>Last Picked</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="studentsTableBody"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-              </div>
-
-            <!-- Classes Tab -->
-            <div class="tab-pane fade" id="classes">
-                <div class="row mt-4">
-                    <div class="col-md-12">
-                        <div class="card shadow-sm border-0 mb-4">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">Class Management</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="classesList"></div>
-                                <div class="border-top mt-4 pt-4">
-                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClassModal">
-                                        Add New Class
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings Tab -->
-            <div class="tab-pane fade" id="settings" role="tabpanel">
-                <div class="container mt-4">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card shadow-sm border-0 mb-4">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Animation Settings</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label for="fireworksEnabled" class="form-check-label">
-                                            <input type="checkbox" class="form-check-input" id="fireworksEnabled">
-                                            Enable Fireworks
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="card shadow-sm border-0 mb-4">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Display Settings</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label class="form-check-label">
-                                            <input type="checkbox" class="form-check-input" id="showTeamsTab">
-                                            Show Teams
-                                        </label>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-check-label">
-                                            <input type="checkbox" class="form-check-input" id="showLeaderboardTab">
-                                            Show Leaderboard
-                                        </label>
-                                    </div>
-                                    <div class="form-check mb-3">
-                                        <input type="checkbox" class="form-check-input" id="showMilestonesTab">
-                                        <label class="form-check-label" for="showMilestonesTab">Show Milestones</label>
-                                    </div>
-                                    <div class="form-check mb-3">
-                                        <input type="checkbox" class="form-check-input" id="showStatsTab">
-                                        <label class="form-check-label" for="showStatsTab">Show Stats</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="card shadow-sm border-0">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Data Management</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <button class="btn btn-primary" id="exportData">Export All Data</button>
-                                    </div>
-                                    <div class="mb-3">
-                                        <button class="btn btn-secondary" id="importData">Import Data</button>
-                                        <input type="file" id="importFile" accept=".json" style="display: none;">
-                                    </div>
-                                    <div class="mb-3">
-                                        <button class="btn btn-danger" id="resetData">Reset All Data</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            
     </div>
     </div>
 

@@ -712,17 +712,155 @@ function loadSavedTeamSet(e) {
 }
 
 function updateSavedTeamSetsSelect() {
-  const select = document.getElementById('savedTeamSetsSelect');
-  select.innerHTML = '<option value="">Load Saved Team Set</option>';
-  
-  if (currentClass && savedTeamSets[currentClass]) {
-    Object.keys(savedTeamSets[currentClass]).forEach(teamSetName => {
-      const option = document.createElement('option');
-      option.value = teamSetName;
-      option.textContent = teamSetName;
-      select.appendChild(option);
+    const select = document.getElementById('savedTeamSetsSelect');
+    const container = select.parentElement;
+    
+    // Clear existing buttons first
+    const existingButtons = container.querySelectorAll('.team-action-btn');
+    existingButtons.forEach(btn => btn.remove());
+    
+    // Create a flex container for the dropdown and buttons
+    const flexContainer = document.createElement('div');
+    flexContainer.className = 'd-flex gap-2';
+    
+    // Move the select into the flex container
+    select.parentNode.insertBefore(flexContainer, select);
+    flexContainer.appendChild(select);
+    
+    // Reset the select
+    select.innerHTML = '<option value="">Load Saved Team Set</option>';
+    select.className = 'form-select'; // Ensure proper styling
+    
+    if (currentClass && savedTeamSets[currentClass]) {
+        Object.keys(savedTeamSets[currentClass]).forEach(teamSetName => {
+            const option = document.createElement('option');
+            option.value = teamSetName;
+            option.textContent = teamSetName;
+            select.appendChild(option);
+        });
+
+        // Add Edit and Remove buttons
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-primary team-action-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.onclick = editSelectedTeamSet;
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-danger team-action-btn';
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = removeSelectedTeamSet;
+
+        flexContainer.appendChild(editBtn);
+        flexContainer.appendChild(removeBtn);
+    }
+}
+
+function removeSelectedTeamSet() {
+    const select = document.getElementById('savedTeamSetsSelect');
+    const teamSetName = select.value;
+    
+    if (!teamSetName) {
+        alert('Please select a team set first');
+        return;
+    }
+
+    if (confirm(`Are you sure you want to delete the team set "${teamSetName}"? This action cannot be undone.`)) {
+        delete savedTeamSets[currentClass][teamSetName];
+        
+        // Remove team assignments from students
+        classes[currentClass].forEach(student => {
+            if (student.teams && student.teams[teamSetName]) {
+                delete student.teams[teamSetName];
+            }
+        });
+
+        saveStats();
+        updateSavedTeamSetsSelect();
+        displayTeams(); // Clear the display
+    }
+}
+
+function editSelectedTeamSet() {
+    const select = document.getElementById('savedTeamSetsSelect');
+    const teamSetName = select.value;
+    
+    if (!teamSetName) {
+        alert('Please select a team set first');
+        return;
+    }
+
+    const teams = savedTeamSets[currentClass][teamSetName].teams;
+    
+    // Create edit form
+    const editForm = document.createElement('div');
+    editForm.className = 'mt-3';
+    editForm.innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Edit Teams: ${teamSetName}</h5>
+            </div>
+            <div class="card-body">
+                ${teams.map((team, index) => `
+                    <div class="mb-3">
+                        <label class="form-label">Team ${index + 1}</label>
+                        <textarea class="form-control team-edit-area" 
+                                data-team-index="${index}"
+                                rows="3">${team.join('\n')}</textarea>
+                    </div>
+                `).join('')}
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-secondary" onclick="this.closest('.card').remove()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveTeamEdits('${teamSetName}')">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Find a good place to insert the form
+    const teamsList = document.getElementById('teamsList');
+    if (teamsList) {
+        teamsList.insertBefore(editForm, teamsList.firstChild);
+    }
+}
+
+function saveTeamEdits(teamSetName) {
+    // Get all textareas before any DOM manipulation
+    const editAreas = document.querySelectorAll('.team-edit-area');
+    const newTeams = Array.from(editAreas).map(textarea => 
+        textarea.value.split('\n')
+            .map(name => name.trim())
+            .filter(name => name)
+    );
+
+    // Update the teams
+    savedTeamSets[currentClass][teamSetName].teams = newTeams;
+    
+    // Update student records
+    classes[currentClass].forEach(student => {
+        if (student.teams) {
+            delete student.teams[teamSetName];
+        }
     });
-  }
+
+    newTeams.forEach((team, teamIndex) => {
+        team.forEach(studentName => {
+            const student = classes[currentClass].find(s => s.name === studentName);
+            if (student) {
+                if (!student.teams) student.teams = {};
+                student.teams[teamSetName] = teamIndex + 1;
+            }
+        });
+    });
+
+    saveStats();
+    updateSavedTeamSetsSelect();
+    displayTeams();
+    
+    // Find and remove the edit form card
+    const editCard = document.querySelector('.card:has(.team-edit-area)');
+    if (editCard) {
+        editCard.remove();
+    }
 }
 
 function updateLeaderboard() {
@@ -914,39 +1052,72 @@ function updateTeamSelector() {
 
 // Update the tab change handler
 document.addEventListener('DOMContentLoaded', function() {
-    const tabLinks = document.querySelectorAll('a[data-bs-toggle="tab"]');
-    
-    // Function to properly hide all inactive tabs
-    function hideInactiveTabs() {
-        const allTabPanes = document.querySelectorAll('.tab-pane');
-        allTabPanes.forEach(pane => {
-            if (!pane.classList.contains('active')) {
-                pane.style.display = 'none';
-                pane.style.height = '0';
-                pane.style.overflow = 'hidden';
-            } else {
-                pane.style.display = 'block';
-                pane.style.height = '';
-                pane.style.overflow = '';
-                
-                // If this is the student picker tab, update the selector
-                if (pane.id === 'studentPicker') {
-                    updateStudentSelector();
-                }
+    // Initialize Bootstrap tabs
+    const tabs = document.querySelectorAll('a[data-bs-toggle="tab"]');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1); // Remove the #
+            
+            // Hide all tab panes
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active');
+            });
+            
+            // Show the target tab pane
+            const targetPane = document.getElementById(targetId);
+            if (targetPane) {
+                targetPane.classList.add('show', 'active');
             }
-        });
-    }
-    
-    // Hide inactive tabs initially
-    hideInactiveTabs();
-    
-    // Handle tab changes
-    tabLinks.forEach(tabLink => {
-        tabLink.addEventListener('shown.bs.tab', function (e) {
-            // Hide all inactive tabs
-            hideInactiveTabs();
+            
+            // Update content based on which tab was clicked
+            switch (targetId) {
+                case 'picker':
+                    updateStudentSelector();
+                    break;
+                case 'teamPicker':
+                    const teamSetsSelect = document.getElementById('savedTeamSetsSelect');
+                    if (teamSetsSelect?.value && currentClass && savedTeamSets[currentClass]?.[teamSetsSelect.value]) {
+                        currentTeams = savedTeamSets[currentClass][teamSetsSelect.value].teams;
+                    }
+                    updateTeamSelector();
+                    break;
+                case 'stats':
+                    updateStats();
+                    break;
+                case 'students':
+                    updateStudentsTab();
+                    break;
+                case 'classes':
+                    updateClassesTab();
+                    break;
+                case 'milestones':
+                    updateMilestonesTab();
+                    break;
+                case 'teams':
+                    displayTeams();
+                    break;
+                case 'leaderboard':
+                    updateLeaderboard();
+                    break;
+                case 'settings':
+                    // Any settings-specific updates can go here
+                    break;
+            }
+            
+            // Update nav tabs active state
+            tabs.forEach(t => {
+                t.classList.remove('active');
+            });
+            this.classList.add('active');
         });
     });
+
+    // Show initial tab
+    const initialTab = document.querySelector('.nav-link.active');
+    if (initialTab) {
+        initialTab.click();
+    }
 });
 
 function selectTeam() {
@@ -1127,17 +1298,155 @@ function loadTeamSet(teamSetName) {
 }
 
 function updateSavedTeamSetsSelect() {
-  const select = document.getElementById('savedTeamSetsSelect');
-  select.innerHTML = '<option value="">Load Saved Team Set</option>';
-  
-  if (currentClass && savedTeamSets[currentClass]) {
-    Object.keys(savedTeamSets[currentClass]).forEach(teamSetName => {
-      const option = document.createElement('option');
-      option.value = teamSetName;
-      option.textContent = teamSetName;
-      select.appendChild(option);
+    const select = document.getElementById('savedTeamSetsSelect');
+    const container = select.parentElement;
+    
+    // Clear existing buttons first
+    const existingButtons = container.querySelectorAll('.team-action-btn');
+    existingButtons.forEach(btn => btn.remove());
+    
+    // Create a flex container for the dropdown and buttons
+    const flexContainer = document.createElement('div');
+    flexContainer.className = 'd-flex gap-2';
+    
+    // Move the select into the flex container
+    select.parentNode.insertBefore(flexContainer, select);
+    flexContainer.appendChild(select);
+    
+    // Reset the select
+    select.innerHTML = '<option value="">Load Saved Team Set</option>';
+    select.className = 'form-select'; // Ensure proper styling
+    
+    if (currentClass && savedTeamSets[currentClass]) {
+        Object.keys(savedTeamSets[currentClass]).forEach(teamSetName => {
+            const option = document.createElement('option');
+            option.value = teamSetName;
+            option.textContent = teamSetName;
+            select.appendChild(option);
+        });
+
+        // Add Edit and Remove buttons
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-secondary team-action-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.onclick = editSelectedTeamSet;
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn btn-danger team-action-btn';
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = removeSelectedTeamSet;
+
+        flexContainer.appendChild(editBtn);
+        flexContainer.appendChild(removeBtn);
+    }
+}
+
+function removeSelectedTeamSet() {
+    const select = document.getElementById('savedTeamSetsSelect');
+    const teamSetName = select.value;
+    
+    if (!teamSetName) {
+        alert('Please select a team set first');
+        return;
+    }
+
+    if (confirm(`Are you sure you want to delete the team set "${teamSetName}"? This action cannot be undone.`)) {
+        delete savedTeamSets[currentClass][teamSetName];
+        
+        // Remove team assignments from students
+        classes[currentClass].forEach(student => {
+            if (student.teams && student.teams[teamSetName]) {
+                delete student.teams[teamSetName];
+            }
+        });
+
+        saveStats();
+        updateSavedTeamSetsSelect();
+        displayTeams(); // Clear the display
+    }
+}
+
+function editSelectedTeamSet() {
+    const select = document.getElementById('savedTeamSetsSelect');
+    const teamSetName = select.value;
+    
+    if (!teamSetName) {
+        alert('Please select a team set first');
+        return;
+    }
+
+    const teams = savedTeamSets[currentClass][teamSetName].teams;
+    
+    // Create edit form
+    const editForm = document.createElement('div');
+    editForm.className = 'mt-3';
+    editForm.innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Edit Teams: ${teamSetName}</h5>
+            </div>
+            <div class="card-body">
+                ${teams.map((team, index) => `
+                    <div class="mb-3">
+                        <label class="form-label">Team ${index + 1}</label>
+                        <textarea class="form-control team-edit-area" 
+                                data-team-index="${index}"
+                                rows="3">${team.join('\n')}</textarea>
+                    </div>
+                `).join('')}
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-secondary" onclick="this.closest('.card').remove()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveTeamEdits('${teamSetName}')">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Find a good place to insert the form
+    const teamsList = document.getElementById('teamsList');
+    if (teamsList) {
+        teamsList.insertBefore(editForm, teamsList.firstChild);
+    }
+}
+
+function saveTeamEdits(teamSetName) {
+    // Get all textareas before any DOM manipulation
+    const editAreas = document.querySelectorAll('.team-edit-area');
+    const newTeams = Array.from(editAreas).map(textarea => 
+        textarea.value.split('\n')
+            .map(name => name.trim())
+            .filter(name => name)
+    );
+
+    // Update the teams
+    savedTeamSets[currentClass][teamSetName].teams = newTeams;
+    
+    // Update student records
+    classes[currentClass].forEach(student => {
+        if (student.teams) {
+            delete student.teams[teamSetName];
+        }
     });
-  }
+
+    newTeams.forEach((team, teamIndex) => {
+        team.forEach(studentName => {
+            const student = classes[currentClass].find(s => s.name === studentName);
+            if (student) {
+                if (!student.teams) student.teams = {};
+                student.teams[teamSetName] = teamIndex + 1;
+            }
+        });
+    });
+
+    saveStats();
+    updateSavedTeamSetsSelect();
+    displayTeams();
+    
+    // Find and remove the edit form card
+    const editCard = document.querySelector('.card:has(.team-edit-area)');
+    if (editCard) {
+        editCard.remove();
+    }
 }
 
 function addPointsToStudent(studentName) {
@@ -1770,61 +2079,157 @@ function addMilestone() {
     updateProgressTracker();
 }
 
-// Add function to display milestones
-function updateMilestonesTab() {
-    const milestonesList = document.getElementById('milestonesList');
-    if (!milestonesList || !currentClass) return;
+// First, let's add a function to check if the container exists and create it if it doesn't
+function ensureMilestonesContainer() {
+    let milestonesContent = document.getElementById('milestonesContent');
+    if (!milestonesContent) {
+        // Find the milestones tab pane
+        const milestonesTab = document.getElementById('milestones');
+        if (milestonesTab) {
+            // Create the container
+            milestonesContent = document.createElement('div');
+            milestonesContent.id = 'milestonesContent';
+            milestonesContent.className = 'mt-4';
+            milestonesTab.appendChild(milestonesContent);
+            console.log("Created milestones container");
+        } else {
+            console.log("Could not find milestones tab");
+            return null;
+        }
+    }
+    return milestonesContent;
+}
 
-    if (!classMilestones[currentClass] || classMilestones[currentClass].length === 0) {
-        milestonesList.innerHTML = '<p class="text-muted">No milestones set for this class.</p>';
+// Then modify the updateMilestonesTab function to use this
+function updateMilestonesTab() {
+    const milestonesContainer = ensureMilestonesContainer();
+    if (!milestonesContainer) {
+        console.log("Could not create or find milestones container");
         return;
     }
+    
+    milestonesContainer.innerHTML = '';
+    
+    // Rest of the function remains the same...
+}
 
-    // Sort milestones by points
-    const sortedMilestones = [...classMilestones[currentClass]]
-        .sort((a, b) => a.points - b.points);
-
-    let html = `
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Points Required</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    sortedMilestones.forEach((milestone, index) => {
-        html += `
-            <tr>
-                <td>${milestone.points}</td>
-                <td>${milestone.description}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-danger" onclick="removeMilestone(${index})">
-                        Remove
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-
-    html += `
-                </tbody>
-            </table>
+// Add function to display milestones
+function updateMilestonesTab() {
+    const milestonesContainer = document.getElementById('milestonesContent');
+    if (!milestonesContainer) {
+        console.log("No milestones container found");
+        return;
+    }
+    
+    milestonesContainer.innerHTML = '';
+    
+    // Always create and add the form first
+    const form = document.createElement('form');
+    form.className = 'mt-3';
+    form.innerHTML = `
+        <div class="row g-3">
+            <div class="col-auto">
+                <input type="number" class="form-control" id="newMilestonePoints" placeholder="Points" required>
+            </div>
+            <div class="col">
+                <input type="text" class="form-control" id="newMilestoneDescription" placeholder="Description" required>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Add Milestone</button>
+            </div>
         </div>
     `;
 
-    milestonesList.innerHTML = html;
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        const points = parseInt(document.getElementById('newMilestonePoints').value);
+        const description = document.getElementById('newMilestoneDescription').value.trim();
+        
+        if (points && description) {
+            if (!classMilestones[currentClass]) {
+                classMilestones[currentClass] = [];
+            }
+            classMilestones[currentClass].push({ points, description });
+            saveStats();
+            updateMilestonesTab();
+            updateProgressTracker();
+            
+            // Clear form
+            document.getElementById('newMilestonePoints').value = '';
+            document.getElementById('newMilestoneDescription').value = '';
+        }
+    };
+
+    milestonesContainer.appendChild(form);
+    
+    // Show message if no milestones and no class selected
+    if (!currentClass) {
+        milestonesContainer.appendChild(
+            Object.assign(document.createElement('p'), {
+                className: 'text-muted mt-3',
+                textContent: 'Please select a class first'
+            })
+        );
+        return;
+    }
+    
+    // Initialize milestones array for this class if it doesn't exist
+    if (!classMilestones[currentClass]) {
+        classMilestones[currentClass] = [];
+    }
+
+    // Create and add the table if there are milestones
+    if (classMilestones[currentClass].length > 0) {
+        const table = document.createElement('table');
+        table.className = 'table mt-4';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Points</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+
+        const tbody = table.querySelector('tbody');
+
+        // Sort milestones by points
+        const sortedMilestones = [...classMilestones[currentClass]].sort((a, b) => a.points - b.points);
+
+        // Add each milestone
+        sortedMilestones.forEach(milestone => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${milestone.points}</td>
+                <td>${milestone.description}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="removeMilestone(${milestone.points}, '${milestone.description.replace(/'/g, "\\'")}')">Remove</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        milestonesContainer.appendChild(table);
+    } else {
+        // Show message when no milestones exist for the class
+        milestonesContainer.appendChild(
+            Object.assign(document.createElement('p'), {
+                className: 'text-muted mt-3',
+                textContent: 'No milestones set for this class.'
+            })
+        );
+    }
 }
 
-// Add function to remove milestones
-function removeMilestone(index) {
-    if (!currentClass || !classMilestones[currentClass]) return;
+// Add this new function
+function removeMilestone(points, description) {
+    const index = classMilestones[currentClass].findIndex(m => 
+        m.points === points && m.description === description
+    );
     
-    if (confirm('Are you sure you want to remove this milestone?')) {
+    if (index !== -1) {
         classMilestones[currentClass].splice(index, 1);
         saveStats();
         updateMilestonesTab();
@@ -2479,4 +2884,71 @@ function updateVisibleTeams(startIndex) {
             items[pos.index].classList.add('visible-item', pos.class);
         }
     });
+}
+
+function handleNewClass(e) {
+    e.preventDefault();
+    const className = document.getElementById("newClassName").value.trim();
+    const studentsList = document.getElementById("newClassStudents").value
+        .split('\n')
+        .map(name => name.trim())
+        .filter(name => name);
+
+    if (className && studentsList.length > 0) {
+        // Create new class with CLASS student first
+        classes[className] = [
+            { name: "CLASS", points: 0, isClassStudent: true },
+            ...studentsList.map(name => ({
+                name: name,
+                points: 0,
+                teams: {}
+            }))
+        ];
+
+        // Initialize empty team sets for the new class
+        savedTeamSets[className] = {};
+
+        // Initialize empty milestones for the new class (if using milestones)
+        if (typeof classMilestones !== 'undefined') {
+            classMilestones[className] = [];
+        }
+
+        // Save everything
+        saveStats();
+
+        // Update class select dropdown
+        updateClassSelect();
+
+        // Set this as the current class
+        currentClass = className;
+        document.getElementById('classSelect').value = className;
+
+        // Reset current teams
+        currentTeams = [];
+
+        // Update all UI elements with empty/default states
+        updateStudentSelector();
+        updateTeamSelector();
+        updateStudentsTab();
+        updateStats();
+        updateLeaderboard();
+        updateProgressTracker();
+
+        // Show the Add Class Point button
+        const addClassPointBtn = document.getElementById('addClassPoint');
+        if (addClassPointBtn) {
+            addClassPointBtn.style.display = 'block';
+        }
+
+        // Save this as the last selected class
+        saveLastSelectedClass(className);
+
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('newClassModal'));
+        modal.hide();
+
+        // Clear the form
+        document.getElementById("newClassName").value = "";
+        document.getElementById("newClassStudents").value = "";
+    }
 }

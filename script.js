@@ -600,17 +600,16 @@ function generateTeams() {
     updateTeamHeader();
 }
 
-function displayTeams() {
+function displayTeams(teamSetName = '') {
     const teamsList = document.getElementById("teamsList");
     if (!teamsList) return;
 
     teamsList.innerHTML = "";
 
     // Add header to show current team set name
-    const teamSetName = document.getElementById('teamSetName').value.trim();
     const headerDiv = document.createElement("div");
     headerDiv.className = "team-set-header mb-4 text-center";
-    headerDiv.innerHTML = teamSetName ? `<h3>${teamSetName}</h3>` : '<h3>Teams</h3>';
+    headerDiv.innerHTML = teamSetName ? `<h3>${teamSetName} Teams</h3>` : '<h3>Teams</h3>';
     teamsList.appendChild(headerDiv);
 
     // Create row container for the grid
@@ -706,8 +705,8 @@ function loadSavedTeamSet(e) {
         numTeamsInput.value = currentTeams.length;
     }
     
-    updateTeamHeader();
-    displayTeams();
+    // Call displayTeams with the team set name
+    displayTeams(teamSetName);
     updateTeamSelector();
 }
 
@@ -921,11 +920,11 @@ function updateLeaderboard() {
 
 function updateStats() {
     const statsDiv = document.getElementById("stats");
-    if (!statsDiv || !currentClass || !stats[currentClass]) return;
+    if (!statsDiv || !currentClass) return;
 
     // Calculate selections made today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const selectionDate = new Date();
+    selectionDate.setHours(0, 0, 0, 0);
     
     let todaySelections = 0;
     Object.values(stats[currentClass]).forEach(studentStats => {
@@ -933,7 +932,7 @@ function updateStats() {
             todaySelections += studentStats.selections.filter(date => {
                 const selectionDate = new Date(date);
                 selectionDate.setHours(0, 0, 0, 0);
-                return selectionDate.getTime() === today.getTime();
+                return selectionDate.getTime() === selectionDate.getTime();
             }).length;
         }
     });
@@ -941,27 +940,28 @@ function updateStats() {
     // Calculate total selections
     const totalSelections = Object.values(stats[currentClass]).reduce((sum, student) => sum + (student.count || 0), 0);
 
+    // Create the initial stats cards
     let html = `
         <div class="container mt-4">
             <div class="row">
                 <div class="col">
                     <div class="card shadow-sm border-0 mb-4">
                         <div class="card-header">
-                            <h5 class="mb-0">Selections Today</h5>
-                        </div>
-                        <div class="card-body">
-                            <h2 class="card-title">${todaySelections}</h2>
-                            <p class="card-text">students selected today</p>
-                        </div>
-                    </div>
-
-                    <div class="card shadow-sm border-0">
-                        <div class="card-header">
                             <h5 class="mb-0">Total Selections</h5>
                         </div>
                         <div class="card-body">
                             <h2 class="card-title">${totalSelections}</h2>
-                            <p class="card-text">total student selections</p>
+                            <p class="card-text">total student and team selections</p>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Daily Selections</h5>
+                        </div>
+                        <div class="card-body">
+                            <h2 class="card-title"></h2>
+                                <div id="calendarContainer" class="mt-4"></div>
                         </div>
                     </div>
                 </div>
@@ -969,7 +969,95 @@ function updateStats() {
         </div>
     `;
 
+    // Set the initial HTML
     statsDiv.innerHTML = html;
+
+    // Now add the calendar to the container
+    const calendarContainer = document.getElementById('calendarContainer');
+    
+    // Add calendar section
+    const calendarSection = document.createElement('div');
+    calendarSection.className = 'mt-4';
+
+    // Get all dates with selections
+    const selectionDates = new Map(); // Will store date -> number of selections
+
+    // Count selections per day
+    if (stats[currentClass]) {
+        Object.values(stats[currentClass]).forEach(studentStats => {
+            if (studentStats.selections) {
+                studentStats.selections.forEach(date => {
+                    const dayKey = new Date(date).toLocaleDateString();
+                    selectionDates.set(dayKey, (selectionDates.get(dayKey) || 0) + 1);
+                });
+            }
+        });
+    }
+
+    // Create calendar grid
+    const calendar = document.createElement('div');
+    calendar.className = 'calendar-grid mt-3';
+    calendar.style.cssText = `
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        max-width: 1000px;
+        margin: 0 auto;
+    `;
+
+    // Add day headers
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    days.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'text-center fw-bold';
+        dayHeader.textContent = day;
+        calendar.appendChild(dayHeader);
+    });
+
+    // Get date range (last 35 days) 
+    const currentDate = new Date();
+    const startDate = new Date(currentDate);
+    startDate.setDate(currentDate.getDate() - 34); // Show last 5 weeks
+
+    // Fill in calendar cells
+    let calendarDate = new Date(startDate);  // Changed from currentDate to calendarDate
+    while (calendarDate <= currentDate) {     // Updated comparison variable
+        const dayKey = calendarDate.toLocaleDateString();
+        const selections = selectionDates.get(dayKey) || 0;
+
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell border rounded p-2';
+        cell.style.cssText = `
+            min-height: 80px;
+            background-color: ${getActivityColor(selections)};
+        `;
+
+        cell.innerHTML = `
+            <div class="text-end small">${calendarDate.getDate()}</div>
+            ${selections ? `
+                <div class="small mt-1">
+                    <div>🎯 ${selections}</div>
+                </div>
+            ` : ''}
+        `;
+
+        calendar.appendChild(cell);
+        
+        calendarDate.setDate(calendarDate.getDate() + 1);  // Updated increment variable
+    }
+
+    calendarSection.appendChild(calendar);
+    calendarContainer.appendChild(calendarSection);
+}
+
+function getActivityColor(selections) {
+    if (!selections) return '#ffffff';
+    
+    // Calculate intensity based on number of selections
+    const intensity = Math.min(selections / 5, 1);
+    
+    // Use a light blue color with varying opacity
+    return `rgba(200, 230, 255, ${intensity})`;
 }
 
 function updateTeamSelector() {
@@ -1504,9 +1592,11 @@ function updateStudentsTab() {
                 
                 // Add visual indicators based on days since picked
                 if (diffDays >= 14) {
-                    rowClass = 'table-danger';  // Red background for 2+ weeks
+                    rowClass = 'table-danger';  // Red background for 14+ days
                 } else if (diffDays >= 7) {
-                    rowClass = 'table-warning';  // Yellow background for 1+ week
+                    rowClass = 'table-warning';  // Yellow background for 7-13 days
+                } else if (diffDays >= 0) {     // Changed this condition to explicitly check for recent picks
+                    rowClass = 'table-success';  // Green background for 0-6 days
                 }
             } else {
                 daysSincePicked = 'Never';
@@ -1565,8 +1655,8 @@ function updateClassesTab() {
         classRow.className = 'd-flex justify-content-between align-items-center';
         classRow.innerHTML = `
           <h5 class="mb-0">${className}</h5>
-          <div class="btn-group">
-            <button class="btn btn-sm btn-outline-primary select-class-btn">Select</button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-info select-class-btn">Select</button>
             <button class="btn btn-sm btn-outline-secondary edit-class-btn">Edit</button>
             <button class="btn btn-sm btn-outline-danger delete-class-btn">Delete</button>
           </div>
@@ -2102,19 +2192,6 @@ function ensureMilestonesContainer() {
 
 // Then modify the updateMilestonesTab function to use this
 function updateMilestonesTab() {
-    const milestonesContainer = ensureMilestonesContainer();
-    if (!milestonesContainer) {
-        console.log("Could not create or find milestones container");
-        return;
-    }
-    
-    milestonesContainer.innerHTML = '';
-    
-    // Rest of the function remains the same...
-}
-
-// Add function to display milestones
-function updateMilestonesTab() {
     const milestonesContainer = document.getElementById('milestonesContent');
     if (!milestonesContainer) {
         console.log("No milestones container found");
@@ -2178,6 +2255,9 @@ function updateMilestonesTab() {
         classMilestones[currentClass] = [];
     }
 
+    // Get current total points for the class
+    const currentTotalPoints = classes[currentClass].reduce((sum, student) => sum + (student.points || 0), 0);
+
     // Create and add the table if there are milestones
     if (classMilestones[currentClass].length > 0) {
         const table = document.createElement('table');
@@ -2201,6 +2281,10 @@ function updateMilestonesTab() {
         // Add each milestone
         sortedMilestones.forEach(milestone => {
             const row = document.createElement('tr');
+            // Add table-success class if milestone is completed
+            if (currentTotalPoints >= milestone.points) {
+                row.className = 'table-success';
+            }
             row.innerHTML = `
                 <td>${milestone.points}</td>
                 <td>${milestone.description}</td>
@@ -2522,19 +2606,6 @@ function initializeSettings() {
     const importFileInput = document.getElementById('importFile');
     const resetBtn = document.getElementById('resetData');
     
-    // Debug log to check if elements are found
-    console.log('Settings elements:', {
-        fireworksEnabledInput,
-        showTeamsTabInput,
-        showLeaderboardTabInput,
-        showMilestonesTabInput,
-        showStatsTabInput,
-        exportBtn,
-        importBtn,
-        importFileInput,
-        resetBtn
-    });
-
     // Add event listeners for settings changes if elements exist
     if (fireworksEnabledInput) {
         fireworksEnabledInput.addEventListener('change', (e) => {
@@ -2951,4 +3022,49 @@ function handleNewClass(e) {
         document.getElementById("newClassName").value = "";
         document.getElementById("newClassStudents").value = "";
     }
+}
+
+function editStudentName(oldName) {
+    const student = classes[currentClass].find(s => s.name === oldName);
+    if (!student) return;
+    
+    // Create an input field with the current name
+    const newName = prompt('Enter new name:', student.name);
+    
+    // Check if user cancelled or entered an empty name
+    if (!newName || newName.trim() === '') return;
+    
+    // Check if the new name already exists in the class
+    const nameExists = classes[currentClass].some(s => 
+        s.name.toLowerCase() === newName.trim().toLowerCase() && s.name !== oldName
+    );
+    
+    if (nameExists) {
+        alert('A student with this name already exists in the class.');
+        return;
+    }
+    
+    // Update the student's name
+    student.name = newName.trim();
+    
+    // Update stats record if it exists
+    if (stats[currentClass]?.[oldName]) {
+        stats[currentClass][newName] = stats[currentClass][oldName];
+        delete stats[currentClass][oldName];
+    }
+    
+    // Update team assignments if any
+    if (savedTeamSets[currentClass]) {
+        Object.values(savedTeamSets[currentClass]).forEach(teamSet => {
+            teamSet.teams = teamSet.teams.map(team => 
+                team.map(name => name === oldName ? newName : name)
+            );
+        });
+    }
+    
+    // Save changes and update displays
+    saveStats();
+    updateStudentsTab();
+    updateLeaderboard();
+    updateTeamSelector();
 }

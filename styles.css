@@ -602,3 +602,11 @@
     height: auto !important;
     overflow: visible !important;
 }
+
+.calendar-cell {
+    transition: background-color 0.3s;
+}
+
+.calendar-cell:hover {
+    background-color: #f0f0f0 !important;
+}
